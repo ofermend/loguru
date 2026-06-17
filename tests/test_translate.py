@@ -62,8 +62,10 @@ def test_translate_after_patch_uses_patched_message(writer):
 def test_translate_combines_with_bind_and_opt_record(writer):
     logger.add(writer, format="{extra[user]} {extra[action]} {message}")
 
-    logger.bind(user="Ada").translate(lambda message: message.upper()).opt(record=True).info(
-        "{record[extra][user]} {action}", action="login"
+    logger.bind(user="Ada", action="login").translate(lambda message: message.upper()).opt(
+        record=True
+    ).info(
+        "{record[extra][user]} {record[extra][action]}"
     )
 
     assert writer.read() == "Ada login ADA LOGIN\n"
