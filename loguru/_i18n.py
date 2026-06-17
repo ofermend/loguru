@@ -140,6 +140,13 @@ _FRENCH = {
     "The 'stop()' method is deprecated, please use 'remove()' instead": (
         "La méthode 'stop()' est obsolète, veuillez utiliser 'remove()' à la place"
     ),
+    "An error has been caught in function '{record[function]}', "
+    "process '{record[process].name}' ({record[process].id}), "
+    "thread '{record[thread].name}' ({record[thread].id}):": (
+        "Une erreur a été interceptée dans la fonction '{record[function]}', "
+        "processus '{record[process].name}' ({record[process].id}), "
+        "fil d'exécution '{record[thread].name}' ({record[thread].id}) :"
+    ),
     # --- loguru/_defaults.py ---
     "Invalid environment variable '%s' (expected a boolean): '%s'": (
         "Variable d'environnement invalide '%s' (booléen attendu) : '%s'"

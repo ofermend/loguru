@@ -120,6 +120,7 @@ from ._error_interceptor import ErrorInterceptor
 from ._file_sink import FileSink
 from ._get_frame import get_frame
 from ._handler import Handler
+from ._i18n import _
 from ._locks_machinery import create_logger_lock
 from ._recattrs import RecordException, RecordFile, RecordLevel, RecordProcess, RecordThread
 from ._simple_sinks import AsyncSink, CallableSink, StandardSink, StreamSink
@@ -884,10 +885,11 @@ class Logger:
                 try:
                     loop = _asyncio_loop.get_running_loop()
                 except RuntimeError as e:
-                    raise ValueError(
+                    msg = _(
                         "An event loop is required to add a coroutine sink with `enqueue=True`, "
                         "but none has been passed as argument and none is currently running."
-                    ) from e
+                    )
+                    raise ValueError(msg) from e
 
             coro = sink if iscoroutinefunction(sink) else sink.__call__
             wrapped_sink = AsyncSink(coro, loop, error_interceptor)
@@ -905,10 +907,10 @@ class Logger:
             terminator = "\n"
             exception_prefix = ""
         else:
-            raise TypeError("Cannot log to objects of type '%s'" % type(sink).__name__)
+            raise TypeError(_("Cannot log to objects of type '%s'") % type(sink).__name__)
 
         if kwargs:
-            raise TypeError("add() got an unexpected keyword argument '%s'" % next(iter(kwargs)))
+            raise TypeError(_("add() got an unexpected keyword argument '%s'") % next(iter(kwargs)))
 
         if filter is None:
             filter_func = None
@@ -923,8 +925,11 @@ class Logger:
             for module, level_ in filter.items():
                 if module is not None and not isinstance(module, str):
                     raise TypeError(
-                        "The filter dict contains an invalid module, "
-                        "it should be a string (or None), not: '%s'" % type(module).__name__
+                        _(
+                            "The filter dict contains an invalid module, "
+                            "it should be a string (or None), not: '%s'"
+                        )
+                        % type(module).__name__
                     )
                 if level_ is False:
                     levelno_ = False
@@ -935,22 +940,26 @@ class Logger:
                         levelno_ = self.level(level_).no
                     except ValueError:
                         raise ValueError(
-                            "The filter dict contains a module '%s' associated to a level name "
-                            "which does not exist: '%s'" % (module, level_)
+                            _(
+                                "The filter dict contains a module '%s' associated to a level name "
+                                "which does not exist: '%s'"
+                            )
+                            % (module, level_)
                         ) from None
                 elif isinstance(level_, int):
                     levelno_ = level_
                 else:
-                    raise TypeError(
+                    msg = _(
                         "The filter dict contains a module '%s' associated to an invalid level, "
                         "it should be an integer, a string or a boolean, not: '%s'"
-                        % (module, type(level_).__name__)
                     )
+                    raise TypeError(msg % (module, type(level_).__name__))
                 if levelno_ < 0:
-                    raise ValueError(
+                    msg = _(
                         "The filter dict contains a module '%s' associated to an invalid level, "
-                        "it should be a positive integer, not: '%d'" % (module, levelno_)
+                        "it should be a positive integer, not: '%d'"
                     )
+                    raise ValueError(msg % (module, levelno_))
                 level_per_module[module] = levelno_
             filter_func = functools.partial(
                 _filters.filter_by_level, level_per_module=level_per_module
@@ -958,14 +967,16 @@ class Logger:
         elif callable(filter):
             if filter == builtins.filter:
                 raise ValueError(
-                    "The built-in 'filter()' function cannot be used as a 'filter' parameter, "
-                    "this is most likely a mistake (please double-check the arguments passed "
-                    "to 'logger.add()')."
+                    _(
+                        "The built-in 'filter()' function cannot be used as a 'filter' parameter, "
+                        "this is most likely a mistake (please double-check the arguments passed "
+                        "to 'logger.add()')."
+                    )
                 )
             filter_func = filter
         else:
             raise TypeError(
-                "Invalid filter, it should be a function, a string or a dict, not: '%s'"
+                _("Invalid filter, it should be a function, a string or a dict, not: '%s'")
                 % type(filter).__name__
             )
 
@@ -975,13 +986,13 @@ class Logger:
             levelno = level
         else:
             raise TypeError(
-                "Invalid level, it should be an integer or a string, not: '%s'"
+                _("Invalid level, it should be an integer or a string, not: '%s'")
                 % type(level).__name__
             )
 
         if levelno < 0:
             raise ValueError(
-                "Invalid level value, it should be a positive integer, not: %d" % levelno
+                _("Invalid level value, it should be a positive integer, not: %d") % levelno
             )
 
         if isinstance(format, str):
@@ -989,21 +1000,23 @@ class Logger:
                 formatter = Colorizer.prepare_format(format + terminator + "{exception}")
             except ValueError as e:
                 raise ValueError(
-                    "Invalid format, color markups could not be parsed correctly"
+                    _("Invalid format, color markups could not be parsed correctly")
                 ) from e
             is_formatter_dynamic = False
         elif callable(format):
             if format == builtins.format:
                 raise ValueError(
-                    "The built-in 'format()' function cannot be used as a 'format' parameter, "
-                    "this is most likely a mistake (please double-check the arguments passed "
-                    "to 'logger.add()')."
+                    _(
+                        "The built-in 'format()' function cannot be used as a 'format' parameter, "
+                        "this is most likely a mistake (please double-check the arguments passed "
+                        "to 'logger.add()')."
+                    )
                 )
             formatter = format
             is_formatter_dynamic = True
         else:
             raise TypeError(
-                "Invalid format, it should be a string or a function, not: '%s'"
+                _("Invalid format, it should be a string or a function, not: '%s'")
                 % type(format).__name__
             )
 
@@ -1014,8 +1027,11 @@ class Logger:
             context = get_context(context)
         elif context is not None and not isinstance(context, BaseContext):
             raise TypeError(
-                "Invalid context, it should be a string or a multiprocessing context, "
-                "not: '%s'" % type(context).__name__
+                _(
+                    "Invalid context, it should be a string or a multiprocessing context, "
+                    "not: '%s'"
+                )
+                % type(context).__name__
             )
 
         with self._core.lock:
@@ -1077,13 +1093,18 @@ class Logger:
         """
         if not (handler_id is None or isinstance(handler_id, int)):
             raise TypeError(
-                "Invalid handler id, it should be an integer as returned "
-                "by the 'add()' method (or None), not: '%s'" % type(handler_id).__name__
+                _(
+                    "Invalid handler id, it should be an integer as returned "
+                    "by the 'add()' method (or None), not: '%s'"
+                )
+                % type(handler_id).__name__
             )
 
         with self._core.lock:
             if handler_id is not None and handler_id not in self._core.handlers:
-                raise ValueError("There is no existing handler with id %d" % handler_id) from None
+                raise ValueError(
+                    _("There is no existing handler with id %d") % handler_id
+                ) from None
 
             if handler_id is None:
                 handler_ids = list(self._core.handlers)
@@ -1175,9 +1196,7 @@ class Logger:
         onerror=None,
         exclude=None,
         default=None,
-        message="An error has been caught in function '{record[function]}', "
-        "process '{record[process].name}' ({record[process].id}), "
-        "thread '{record[thread].name}' ({record[thread].id}):"
+        message=None,
     ):
         """Return a decorator to automatically log possibly caught error in wrapped function.
 
@@ -1256,6 +1275,13 @@ class Logger:
         ):
             return self.catch()(exception)
 
+        if message is None:
+            message = _(
+                "An error has been caught in function '{record[function]}', "
+                "process '{record[process].name}' ({record[process].id}), "
+                "thread '{record[thread].name}' ({record[thread].id}):"
+            )
+
         logger = self
 
         class Catcher:
@@ -1306,8 +1332,11 @@ class Logger:
             def __call__(self, function):
                 if isclass(function):
                     raise TypeError(
-                        "Invalid object decorated with 'catch()', it must be a function, "
-                        "not a class (tried to wrap '%s')" % function.__name__
+                        _(
+                            "Invalid object decorated with 'catch()', it must be a function, "
+                            "not a class (tried to wrap '%s')"
+                        )
+                        % function.__name__
                     )
 
                 catcher = Catcher(True)
@@ -1460,7 +1489,7 @@ class Logger:
         if ansi:
             colors = True
             warnings.warn(
-                "The 'ansi' parameter is deprecated, please use 'colors' instead",
+                _("The 'ansi' parameter is deprecated, please use 'colors' instead"),
                 DeprecationWarning,
                 stacklevel=2,
             )
@@ -1654,26 +1683,28 @@ class Logger:
         """
         if not isinstance(name, str):
             raise TypeError(
-                "Invalid level name, it should be a string, not: '%s'" % type(name).__name__
+                _("Invalid level name, it should be a string, not: '%s'") % type(name).__name__
             )
 
         if no is color is icon is None:
             try:
                 return self._core.levels[name]
             except KeyError:
-                raise ValueError("Level '%s' does not exist" % name) from None
+                raise ValueError(_("Level '%s' does not exist") % name) from None
 
         if name not in self._core.levels:
             if no is None:
                 raise ValueError(
-                    "Level '%s' does not exist, you have to create it by specifying a level no"
+                    _("Level '%s' does not exist, you have to create it by specifying a level no")
                     % name
                 )
             old_color, old_icon = "", " "
         elif no is not None:
-            raise ValueError("Level '%s' already exists, you can't update its severity no" % name)
+            raise ValueError(
+                _("Level '%s' already exists, you can't update its severity no") % name
+            )
         else:
-            _, no, old_color, old_icon = self.level(name)
+            __, no, old_color, old_icon = self.level(name)
 
         if color is None:
             color = old_color
@@ -1683,11 +1714,11 @@ class Logger:
 
         if not isinstance(no, int):
             raise TypeError(
-                "Invalid level no, it should be an integer, not: '%s'" % type(no).__name__
+                _("Invalid level no, it should be an integer, not: '%s'") % type(no).__name__
             )
 
         if no < 0:
-            raise ValueError("Invalid level no, it should be a positive integer, not: %d" % no)
+            raise ValueError(_("Invalid level no, it should be a positive integer, not: %d") % no)
 
         ansi = Colorizer.ansify(color)
         level = Level(name, no, color, icon)
@@ -1873,7 +1904,7 @@ class Logger:
     def _change_activation(self, name, status):
         if not (name is None or isinstance(name, str)):
             raise TypeError(
-                "Invalid name, it should be a string (or None), not: '%s'" % type(name).__name__
+                _("Invalid name, it should be a string (or None), not: '%s'") % type(name).__name__
             )
 
         with self._core.lock:
@@ -1973,7 +2004,7 @@ class Logger:
 
         else:
             raise TypeError(
-                "Invalid file, it should be a string path or a file object, not: '%s'"
+                _("Invalid file, it should be a string path or a file object, not: '%s'")
                 % type(file).__name__
             )
 
@@ -1988,14 +2019,15 @@ class Logger:
             cast_function = cast
         else:
             raise TypeError(
-                "Invalid cast, it should be a function or a dict, not: '%s'" % type(cast).__name__
+                _("Invalid cast, it should be a function or a dict, not: '%s'")
+                % type(cast).__name__
             )
 
         try:
             regex = re.compile(pattern)
         except TypeError:
             raise TypeError(
-                "Invalid pattern, it should be a string or a compiled regex, not: '%s'"
+                _("Invalid pattern, it should be a string or a compiled regex, not: '%s'")
                 % type(pattern).__name__
             ) from None
 
@@ -2035,15 +2067,15 @@ class Logger:
             level_id, level_name, level_no, level_icon = core.levels_lookup[level]
         except (KeyError, TypeError):
             if isinstance(level, str):
-                raise ValueError("Level '%s' does not exist" % level) from None
+                raise ValueError(_("Level '%s' does not exist") % level) from None
             if not isinstance(level, int):
                 raise TypeError(
-                    "Invalid level, it should be an integer or a string, not: '%s'"
+                    _("Invalid level, it should be an integer or a string, not: '%s'")
                     % type(level).__name__
                 ) from None
             if level < 0:
                 raise ValueError(
-                    "Invalid level value, it should be a positive integer, not: %d" % level
+                    _("Invalid level value, it should be a positive integer, not: %d") % level
                 ) from None
             cache = (None, "Level %d" % level, level, " ")
             level_id, level_name, level_no, level_icon = cache
@@ -2136,8 +2168,10 @@ class Logger:
         if record:
             if "record" in kwargs:
                 raise TypeError(
-                    "The message can't be formatted: 'record' shall not be used as a keyword "
-                    "argument while logger has been configured with '.opt(record=True)'"
+                    _(
+                        "The message can't be formatted: 'record' shall not be used as a keyword "
+                        "argument while logger has been configured with '.opt(record=True)'"
+                    )
                 )
             kwargs.update(record=log_record)
 
@@ -2221,7 +2255,7 @@ class Logger:
           confusing name.
         """
         warnings.warn(
-            "The 'start()' method is deprecated, please use 'add()' instead",
+            _("The 'start()' method is deprecated, please use 'add()' instead"),
             DeprecationWarning,
             stacklevel=2,
         )
@@ -2239,7 +2273,7 @@ class Logger:
           confusing name.
         """
         warnings.warn(
-            "The 'stop()' method is deprecated, please use 'remove()' instead",
+            _("The 'stop()' method is deprecated, please use 'remove()' instead"),
             DeprecationWarning,
             stacklevel=2,
         )
