@@ -1,6 +1,8 @@
 import asyncio
 import sys
 
+from ._i18n import _
+
 
 def load_loop_functions():
     if sys.version_info >= (3, 7):
@@ -18,7 +20,7 @@ def load_loop_functions():
         def get_running_loop():
             loop = asyncio.get_event_loop()
             if not loop.is_running():
-                raise RuntimeError("There is no running event loop")
+                raise RuntimeError(_("There is no running event loop"))
             return loop
 
     return get_task_loop, get_running_loop
