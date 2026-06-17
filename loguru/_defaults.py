@@ -1,5 +1,7 @@
 from os import environ
 
+from ._i18n import _
+
 
 def env(key, type_, default=None):
     if key not in environ:
@@ -15,16 +17,16 @@ def env(key, type_, default=None):
         if val.lower() in ["0", "false", "no", "n", "nok", "off"]:
             return False
         raise ValueError(
-            "Invalid environment variable '%s' (expected a boolean): '%s'" % (key, val)
+            _("Invalid environment variable '%s' (expected a boolean): '%s'") % (key, val)
         )
     if type_ is int:
         try:
             return int(val)
         except ValueError:
             raise ValueError(
-                "Invalid environment variable '%s' (expected an integer): '%s'" % (key, val)
+                _("Invalid environment variable '%s' (expected an integer): '%s'") % (key, val)
             ) from None
-    raise ValueError("The requested type '%s' is not supported" % type_.__name__)
+    raise ValueError(_("The requested type '%s' is not supported") % type_.__name__)
 
 
 LOGURU_AUTOINIT = env("LOGURU_AUTOINIT", bool, True)

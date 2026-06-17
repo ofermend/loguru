@@ -2,6 +2,8 @@ import datetime
 import re
 from typing import Optional, Tuple
 
+from ._i18n import _
+
 
 class Frequencies:
     """Provide static methods to compute the next occurrence of various time frequencies.
@@ -132,7 +134,7 @@ def parse_size(size: str) -> Optional[float]:
     try:
         s = float(s)
     except ValueError as err:
-        raise ValueError("Invalid float value while parsing size: '%s'" % s) from err
+        raise ValueError(_("Invalid float value while parsing size: '%s'") % s) from err
 
     u = "kmgtpezy".index(u.lower()) + 1 if u else 0
     i = 1024 if i else 1000
@@ -185,12 +187,12 @@ def parse_duration(duration: str) -> Optional[datetime.timedelta]:
         try:
             value = float(value)
         except ValueError as e:
-            raise ValueError("Invalid float value while parsing duration: '%s'" % value) from e
+            raise ValueError(_("Invalid float value while parsing duration: '%s'") % value) from e
 
         try:
             unit = next(u for r, u in units if re.fullmatch(r, unit, flags=re.I))
         except StopIteration:
-            raise ValueError("Invalid unit value while parsing duration: '%s'" % unit) from None
+            raise ValueError(_("Invalid unit value while parsing duration: '%s'") % unit) from None
 
         seconds += value * unit
 
@@ -258,7 +260,9 @@ def parse_day(day: str) -> Optional[int]:
     if day.startswith("w") and day[1:].isdigit():
         day = int(day[1:])
         if not 0 <= day < 7:
-            raise ValueError("Invalid weekday value while parsing day (expected [0-6]): '%d'" % day)
+            raise ValueError(
+                _("Invalid weekday value while parsing day (expected [0-6]): '%d'") % day
+            )
     else:
         day = None
 
@@ -310,7 +314,7 @@ def parse_time(time: str) -> datetime.time:
         else:
             return dt.time()
 
-    raise ValueError("Unrecognized format while parsing time: '%s'" % time)
+    raise ValueError(_("Unrecognized format while parsing time: '%s'") % time)
 
 
 def parse_daytime(daytime: str) -> Optional[Tuple[int, datetime.time]]:
@@ -343,16 +347,16 @@ def parse_daytime(daytime: str) -> Optional[Tuple[int, datetime.time]]:
     try:
         parsed_day = parse_day(day)
         if match and parsed_day is None:
-            raise ValueError("Unparsable day")
+            raise ValueError(_("Unparsable day"))
     except ValueError as e:
-        raise ValueError("Invalid day while parsing daytime: '%s'" % day) from e
+        raise ValueError(_("Invalid day while parsing daytime: '%s'") % day) from e
 
     try:
         parsed_time = parse_time(time)
         if match and parsed_time is None:
-            raise ValueError("Unparsable time")
+            raise ValueError(_("Unparsable time"))
     except ValueError as e:
-        raise ValueError("Invalid time while parsing daytime: '%s'" % time) from e
+        raise ValueError(_("Invalid time while parsing daytime: '%s'") % time) from e
 
     if parsed_day is None and parsed_time is None:
         return None

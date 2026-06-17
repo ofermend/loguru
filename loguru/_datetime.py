@@ -5,6 +5,8 @@ from datetime import timedelta, timezone
 from functools import lru_cache, partial
 from time import localtime, strftime
 
+from ._i18n import _
+
 tokens = r"H{1,2}|h{1,2}|m{1,2}|s{1,2}|S+|YYYY|YY|M{1,4}|D{1,4}|Z{1,2}|zz|A|X|x|E|Q|dddd|ddd|d"
 
 pattern = re.compile(r"(?:{0})|\[(?:{0}|!UTC|)\]".format(tokens))
@@ -69,9 +71,11 @@ def _compile_format(spec):
 
     if "SSSSSSS" in spec:
         raise ValueError(
-            "Invalid time format: the provided format string contains more than six successive "
-            "'S' characters. This may be due to an attempt to use nanosecond precision, which "
-            "is not supported."
+            _(
+                "Invalid time format: the provided format string contains more than six successive "
+                "'S' characters. This may be due to an attempt to use nanosecond precision, which "
+                "is not supported."
+            )
         )
 
     rep = {

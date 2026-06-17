@@ -7,6 +7,7 @@ from contextlib import contextmanager
 from threading import Thread
 
 from ._colorizer import Colorizer
+from ._i18n import _
 from ._locks_machinery import create_handler_lock
 
 
@@ -111,12 +112,13 @@ class Handler:
     def _protected_lock(self):
         """Acquire the lock, but fail fast if its already acquired by the current thread."""
         if getattr(self._lock_acquired, "acquired", False):
-            raise RuntimeError(
+            msg = _(
                 "Could not acquire internal lock because it was already in use (deadlock avoided). "
                 "This likely happened because the logger was re-used inside a sink, a signal "
                 "handler or a '__del__' method. This is not permitted because the logger and its "
                 "handlers are not re-entrant."
             )
+            raise RuntimeError(msg)
         try:
             self._lock_acquired.acquired = True
             with self._lock:
@@ -255,14 +257,17 @@ class Handler:
         except KeyError as e:
             available = ", ".join(map(repr, record.keys()))
             raise ValueError(
-                "Failed to format log record: key %s not found.\n"
-                "Verify that the format string %r only references valid record keys "
-                "and that all required extra keys are present.\n"
-                "Available records key are: %s.\n"
-                "While using a dynamic formatter as a function, note that it must return "
-                "the string to be formatted, not an already formatted message.\n"
-                "To include custom data, use 'logger.bind(key=value)' and reference it "
-                "as '{extra[key]}' in the format string." % (e, log_format, available)
+                _(
+                    "Failed to format log record: key %s not found.\n"
+                    "Verify that the format string %r only references valid record keys "
+                    "and that all required extra keys are present.\n"
+                    "Available records key are: %s.\n"
+                    "While using a dynamic formatter as a function, note that it must return "
+                    "the string to be formatted, not an already formatted message.\n"
+                    "To include custom data, use 'logger.bind(key=value)' and reference it "
+                    "as '{extra[key]}' in the format string."
+                )
+                % (e, log_format, available)
             ) from e
 
     @staticmethod

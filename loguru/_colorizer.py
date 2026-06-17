@@ -2,13 +2,15 @@ import re
 from contextlib import contextmanager
 from string import Formatter
 
+from ._i18n import _
+
 
 @contextmanager
 def try_formatting(*exceptions):
     try:
         yield
     except exceptions as e:
-        raise ValueError(
+        msg = _(
             "The logging message could not be formatted with the provided arguments.\n"
             "Common causes include:\n"
             "  - The message contains unmatched or malformed curly braces.\n"
@@ -20,7 +22,8 @@ def try_formatting(*exceptions):
             "  - Escaping non-formatting braces by doubling them.\n"
             "  - Avoiding f-string in the logged message.\n"
             "  - Using `logger.bind()` for structured context instead of kwargs.\n"
-        ) from e
+        )
+        raise ValueError(msg) from e
 
 
 class Style:
@@ -210,8 +213,10 @@ class AnsiParser:
             if type_ == TokenType.LEVEL:
                 if ansi_level is None:
                     raise ValueError(
-                        "The '<level>' color tag is not allowed in this context, "
-                        "it has not yet been associated to any color value."
+                        _(
+                            "The '<level>' color tag is not allowed in this context, "
+                            "it has not yet been associated to any color value."
+                        )
                     )
                 value = ansi_level
             output += value
@@ -269,8 +274,8 @@ class AnsiParser:
                     self._tokens.extend(self._color_tokens)
                     continue
                 if tag in self._tags:
-                    raise ValueError('Closing tag "%s" violates nesting rules' % markup)
-                raise ValueError('Closing tag "%s" has no corresponding opening tag' % markup)
+                    raise ValueError(_('Closing tag "%s" violates nesting rules') % markup)
+                raise ValueError(_('Closing tag "%s" has no corresponding opening tag') % markup)
 
             if tag in {"lvl", "level"}:
                 token = (TokenType.LEVEL, None)
@@ -279,8 +284,10 @@ class AnsiParser:
 
                 if ansi is None:
                     raise ValueError(
-                        'Tag "%s" does not correspond to any known color directive, '
-                        "make sure you have not misspelled it (or prepend '\\' to escape it)"
+                        _(
+                            'Tag "%s" does not correspond to any known color directive, '
+                            "make sure you have not misspelled it (or prepend '\\' to escape it)"
+                        )
                         % markup
                     )
 
@@ -295,7 +302,7 @@ class AnsiParser:
     def done(self, *, strict=True):
         if strict and self._tags:
             faulty_tag = self._tags.pop(0)
-            raise ValueError('Opening tag "<%s>" has no corresponding closing tag' % faulty_tag)
+            raise ValueError(_('Opening tag "<%s>" has no corresponding closing tag') % faulty_tag)
         return self._tokens
 
     def current_color_tokens(self):
@@ -419,7 +426,7 @@ class Colorizer:
         # This function re-implements Formatter._vformat()
 
         if recursion_depth < 0:
-            raise ValueError("Max string recursion exceeded")
+            raise ValueError(_("Max string recursion exceeded"))
 
         formatter = Formatter()
         parser = AnsiParser()
@@ -434,23 +441,27 @@ class Colorizer:
                 if field_name == "":
                     if auto_arg_index is False:
                         raise ValueError(
-                            "cannot switch from manual field "
-                            "specification to automatic field "
-                            "numbering"
+                            _(
+                                "cannot switch from manual field "
+                                "specification to automatic field "
+                                "numbering"
+                            )
                         )
                     field_name = str(auto_arg_index)
                     auto_arg_index += 1
                 elif field_name.isdigit():
                     if auto_arg_index:
                         raise ValueError(
-                            "cannot switch from manual field "
-                            "specification to automatic field "
-                            "numbering"
+                            _(
+                                "cannot switch from manual field "
+                                "specification to automatic field "
+                                "numbering"
+                            )
                         )
                     auto_arg_index = False
 
                 with try_formatting(KeyError, IndexError, AttributeError):
-                    obj, _ = formatter.get_field(field_name, args, kwargs)
+                    obj, __ = formatter.get_field(field_name, args, kwargs)
 
                 obj = formatter.convert_field(obj, conversion)
 
@@ -476,7 +487,7 @@ class Colorizer:
     @staticmethod
     def _parse_without_formatting(string, *, recursion_depth=2, recursive=False):
         if recursion_depth < 0:
-            raise ValueError("Max string recursion exceeded")
+            raise ValueError(_("Max string recursion exceeded"))
 
         formatter = Formatter()
         parser = AnsiParser()
@@ -504,7 +515,7 @@ class Colorizer:
                 field += "}"
                 parser.feed(field, raw=True)
 
-                _, color_tokens = Colorizer._parse_without_formatting(
+                __, color_tokens = Colorizer._parse_without_formatting(
                     format_spec, recursion_depth=recursion_depth - 1, recursive=True
                 )
                 messages_color_tokens.extend(color_tokens)

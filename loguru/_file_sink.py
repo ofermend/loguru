@@ -11,6 +11,7 @@ from stat import ST_DEV, ST_INO
 from . import _string_parsers as string_parsers
 from ._ctime_functions import get_ctime, set_ctime
 from ._datetime import aware_now
+from ._i18n import _
 
 
 def generate_rename_path(root, ext, creation_time):
@@ -319,7 +320,7 @@ class FileSink:
             return None
         if isinstance(rotation, (list, tuple, set)):
             if len(rotation) == 0:
-                raise ValueError("Must provide at least one rotation condition")
+                raise ValueError(_("Must provide at least one rotation condition"))
             return Rotation.RotationGroup(
                 [FileSink._make_rotation_function(rot) for rot in rotation]
             )
@@ -342,7 +343,7 @@ class FileSink:
                     time = datetime.time(0, 0, 0)
                 step_forward = partial(Rotation.forward_weekday, weekday=day)
                 return Rotation.RotationTime(step_forward, time)
-            raise ValueError("Cannot parse rotation from: '%s'" % rotation)
+            raise ValueError(_("Cannot parse rotation from: '%s'") % rotation)
         if isinstance(rotation, (numbers.Real, decimal.Decimal)):
             return partial(Rotation.rotation_size, size_limit=rotation)
         if isinstance(rotation, datetime.time):
@@ -352,7 +353,9 @@ class FileSink:
             return Rotation.RotationTime(step_forward)
         if callable(rotation):
             return rotation
-        raise TypeError("Cannot infer rotation for objects of type: '%s'" % type(rotation).__name__)
+        raise TypeError(
+            _("Cannot infer rotation for objects of type: '%s'") % type(rotation).__name__
+        )
 
     @staticmethod
     def _make_retention_function(retention):
@@ -361,7 +364,7 @@ class FileSink:
         if isinstance(retention, str):
             interval = string_parsers.parse_duration(retention)
             if interval is None:
-                raise ValueError("Cannot parse retention from: '%s'" % retention)
+                raise ValueError(_("Cannot parse retention from: '%s'") % retention)
             return FileSink._make_retention_function(interval)
         if isinstance(retention, int):
             return partial(Retention.retention_count, number=retention)
@@ -370,7 +373,7 @@ class FileSink:
         if callable(retention):
             return retention
         raise TypeError(
-            "Cannot infer retention for objects of type: '%s'" % type(retention).__name__
+            _("Cannot infer retention for objects of type: '%s'") % type(retention).__name__
         )
 
     @staticmethod
@@ -432,11 +435,11 @@ class FileSink:
                     compression=zipfile.ZIP_DEFLATED,
                 )
             else:
-                raise ValueError("Invalid compression format: '%s'" % ext)
+                raise ValueError(_("Invalid compression format: '%s'") % ext)
 
             return partial(Compression.compression, ext="." + ext, compress_function=compress)
         if callable(compression):
             return compression
         raise TypeError(
-            "Cannot infer compression for objects of type: '%s'" % type(compression).__name__
+            _("Cannot infer compression for objects of type: '%s'") % type(compression).__name__
         )
